@@ -1,6 +1,6 @@
 {
   "name": "feishu-interactive-cards",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Create and send interactive cards to Feishu (Lark) with buttons, forms, polls, and rich UI elements. Automatically handles callbacks via long-polling connection.",
   "keywords": [
     "feishu",

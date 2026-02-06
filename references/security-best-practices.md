@@ -2,13 +2,15 @@
 
 ## 核心原则
 
-**永远不要将用户输入直接传递给 shell 命令！**
+**永远不要将用户输入直接传递给 shell 命令或文件系统操作！**
 
 这是最常见也是最危险的安全漏洞之一。
 
-## 命令注入漏洞
+## 常见安全漏洞
 
-### ❌ 危险示例
+### 1. 命令注入漏洞
+
+#### ❌ 危险示例
 
 ```javascript
 // 用户输入："; rm -rf / #"
@@ -38,6 +40,52 @@ if (!safePath.startsWith(workspaceRoot)) {
 
 // 3. 使用安全的 API
 await fs.unlink(safePath);
+```
+
+### 2. 任意文件读取漏洞
+
+#### ❌ 危险示例
+
+```javascript
+// 用户输入："/etc/passwd" 或 "~/.ssh/id_rsa"
+const templatePath = args['--template'];
+const content = fs.readFileSync(templatePath, 'utf8');
+// 攻击者可以读取系统中的任意文件！
+```
+
+#### ✅ 安全做法
+
+```javascript
+const path = require('path');
+const fs = require('fs');
+
+const templatePath = args['--template'];
+
+// 1. 规范化路径
+const resolvedPath = path.resolve(templatePath);
+
+// 2. 定义允许的目录白名单
+const allowedDirs = [
+  path.join(__dirname, '..', 'examples'),
+  path.join(__dirname, '..', 'templates')
+];
+
+// 3. 检查路径是否在白名单内
+const isAllowed = allowedDirs.some(dir => resolvedPath.startsWith(dir));
+
+if (!isAllowed) {
+  throw new Error('路径不在允许的目录范围内');
+}
+
+// 4. 检查文件扩展名
+const ext = path.extname(resolvedPath).toLowerCase();
+const allowedExtensions = ['.json', '.txt', '.md'];
+if (!allowedExtensions.includes(ext)) {
+  throw new Error('不支持的文件类型');
+}
+
+// 5. 安全读取
+const content = fs.readFileSync(resolvedPath, 'utf8');
 ```
 
 ## 输入验证
@@ -343,6 +391,8 @@ try {
 - [ ] 所有用户输入都经过验证
 - [ ] 没有直接将用户输入传递给 shell 命令
 - [ ] 文件路径经过规范化和范围检查
+- [ ] 使用目录白名单限制文件访问
+- [ ] 文件扩展名经过验证
 - [ ] 实现了权限控制
 - [ ] 使用 event_id 防止重放攻击
 - [ ] 敏感信息不会泄露到卡片或日志
@@ -350,6 +400,20 @@ try {
 - [ ] 实现了速率限制
 - [ ] 使用环境变量存储密钥
 - [ ] 代码经过安全审计
+
+## 已知漏洞修复历史
+
+### v1.0.2 (2026-02-06)
+- **修复**: 任意文件读取漏洞
+- **位置**: `scripts/send-card.js` 的 `--template` 参数
+- **影响**: 攻击者可以读取系统中的任意文件并发送到飞书
+- **修复方案**: 添加目录白名单、文件扩展名验证、JSON 格式验证
+
+### v1.0.1 (2026-02-06)
+- **修复**: 命令注入漏洞
+- **位置**: `references/gateway-integration.md` 和 `SKILL.md` 的示例代码
+- **影响**: 攻击者可以通过文件路径参数执行任意命令
+- **修复方案**: 使用 Node.js fs API 替代 shell 命令，添加路径验证
 
 ## 参考资源
 

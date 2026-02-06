@@ -106,8 +106,58 @@ async function main() {
   
   // 根据类型生成卡片
   if (cardType === 'custom' && templatePath) {
-    // 自定义卡片
-    card = JSON.parse(fs.readFileSync(templatePath, 'utf8'));
+    // 自定义卡片 - 安全验证
+    // ⚠️ SECURITY: 防止任意文件读取攻击
+    
+    // 1. 规范化路径
+    const resolvedPath = path.resolve(templatePath);
+    
+    // 2. 定义允许的模板目录
+    const skillRoot = path.resolve(__dirname, '..');
+    const allowedDirs = [
+      path.join(skillRoot, 'examples'),
+      path.join(skillRoot, 'templates'),
+      path.join(process.cwd(), 'templates'),
+      path.join(process.cwd(), 'examples')
+    ];
+    
+    // 3. 检查路径是否在允许的目录内
+    const isAllowed = allowedDirs.some(dir => resolvedPath.startsWith(dir));
+    
+    if (!isAllowed) {
+      console.error('❌ 安全错误: 模板文件必须位于以下目录之一:');
+      allowedDirs.forEach(dir => console.error(`  - ${dir}`));
+      console.error(`\n尝试访问: ${resolvedPath}`);
+      process.exit(1);
+    }
+    
+    // 4. 检查文件扩展名
+    const ext = path.extname(resolvedPath).toLowerCase();
+    if (ext !== '.json') {
+      console.error('❌ 安全错误: 模板文件必须是 .json 格式');
+      process.exit(1);
+    }
+    
+    // 5. 检查文件是否存在
+    if (!fs.existsSync(resolvedPath)) {
+      console.error('❌ 文件不存在:', resolvedPath);
+      process.exit(1);
+    }
+    
+    // 6. 读取并验证 JSON 格式
+    try {
+      const content = fs.readFileSync(resolvedPath, 'utf8');
+      card = JSON.parse(content);
+      
+      // 验证是否是有效的飞书卡片格式
+      if (!card.elements && !card.header) {
+        console.error('❌ 无效的卡片格式: 缺少 elements 或 header 字段');
+        process.exit(1);
+      }
+    } catch (error) {
+      console.error('❌ 无效的 JSON 格式:', error.message);
+      process.exit(1);
+    }
   } else if (cardType === 'confirmation') {
     // 确认卡片
     const CardTemplates = require('./card-templates');

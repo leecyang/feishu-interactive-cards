@@ -42,10 +42,12 @@ See [SKILL.md](SKILL.md) for complete documentation including:
 
 ## 🔒 Security
 
-**Version 1.0.1** includes critical security fixes:
-- ✅ Fixed command injection vulnerability
+**Version 1.0.2** includes critical security fixes:
+- ✅ Fixed command injection vulnerability (v1.0.1)
+- ✅ Fixed arbitrary file read vulnerability (v1.0.2)
 - ✅ Safe file operations using Node.js APIs
 - ✅ Path validation and sanitization
+- ✅ Template file restrictions (only allowed directories)
 - ✅ Comprehensive security documentation
 
 See [references/security-best-practices.md](references/security-best-practices.md) for details.

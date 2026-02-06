@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.0.2] - 2026-02-06
+
+### 🔒 Security Fixes
+- **CRITICAL**: Fixed arbitrary file read vulnerability in `scripts/send-card.js`
+  - Added path validation to restrict `--template` parameter to allowed directories only
+  - Only allows reading from `examples/` and `templates/` directories
+  - Added file extension validation (only `.json` files allowed)
+  - Added JSON format validation to prevent reading non-card files
+  - Prevents data exfiltration via template parameter
+
+### 🛡️ Security Improvements
+- Template files must be in allowed directories: `examples/`, `templates/`
+- Only `.json` files can be used as templates
+- Path traversal attacks are now blocked
+- Clear error messages for security violations
+
 ## [1.0.1] - 2026-02-06
 
 ### 🔒 Security Fixes
