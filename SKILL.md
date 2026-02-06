@@ -99,16 +99,37 @@ Callback server automatically sends all card interactions to OpenClaw Gateway. F
 if (callback.data.action.value.action === "confirm") {
   const file = callback.data.action.value.file;
   
-  // Execute operation
-  await exec({ command: `rm ${file}` });
+  // ⚠️ SECURITY: Validate and sanitize file path before use
+  // Use OpenClaw's built-in file operations instead of shell commands
+  const fs = require('fs').promises;
+  const path = require('path');
   
-  // Update card
-  await updateCard(callback.context.open_message_id, {
-    header: { title: "Done", template: "green" },
-    elements: [
-      { tag: "div", text: { content: `File ${file} deleted`, tag: "lark_md" } }
-    ]
-  });
+  try {
+    // Validate file path (prevent directory traversal)
+    const safePath = path.resolve(file);
+    if (!safePath.startsWith(process.cwd())) {
+      throw new Error('Invalid file path');
+    }
+    
+    // Use fs API instead of shell command
+    await fs.unlink(safePath);
+    
+    // Update card
+    await updateCard(callback.context.open_message_id, {
+      header: { title: "Done", template: "green" },
+      elements: [
+        { tag: "div", text: { content: `File ${path.basename(safePath)} deleted`, tag: "lark_md" } }
+      ]
+    });
+  } catch (error) {
+    // Handle error
+    await updateCard(callback.context.open_message_id, {
+      header: { title: "Error", template: "red" },
+      elements: [
+        { tag: "div", text: { content: `Failed to delete file: ${error.message}`, tag: "lark_md" } }
+      ]
+    });
+  }
 }
 ```
 
@@ -177,7 +198,21 @@ Callback server reads config automatically.
 - Validate JSON format
 - Check required fields
 
+## Security
+
+**⚠️ CRITICAL: Never pass user input directly to shell commands!**
+
+This skill includes comprehensive security guidelines. Please read [references/security-best-practices.md](references/security-best-practices.md) before implementing callback handlers.
+
+Key security principles:
+- Always validate and sanitize user input
+- Use Node.js built-in APIs instead of shell commands
+- Implement proper permission checks
+- Prevent command injection vulnerabilities
+- Use event_id for deduplication
+
 ## References
 
+- [Security Best Practices](references/security-best-practices.md) - **READ THIS FIRST!**
 - [Feishu Card Documentation](https://open.feishu.cn/document/ukTMukTMukTM/uczM3QjL3MzN04yNzcDN)
 - [OpenClaw Docs](https://docs.openclaw.ai)

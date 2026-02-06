@@ -8,7 +8,7 @@
     {
       "tag": "div",
       "text": {
-        "content": "**确认删除文件 test.txt？**\n\n此操作不可撤销。",
+        "content": "**确认删除文件 test.txt？**\n\n此操作不可撤销。\n\n⚠️ **安全提示**：文件路径会在服务端进行验证，确保只能删除工作区内的文件。",
         "tag": "lark_md"
       }
     },
@@ -22,7 +22,12 @@
           "tag": "button",
           "text": { "content": "✅ 确认", "tag": "plain_text" },
           "type": "danger",
-          "value": { "action": "confirm", "operation": "delete_file", "file": "test.txt" }
+          "value": { 
+            "action": "confirm", 
+            "operation": "delete_file", 
+            "file": "test.txt",
+            "comment": "⚠️ SECURITY: This file path will be validated on the server side. Never pass user input directly to shell commands!"
+          }
         },
         {
           "tag": "button",

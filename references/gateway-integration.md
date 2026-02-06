@@ -212,16 +212,45 @@ async function sendFollowUpMessage(chatId, message) {
 if (action.value.action === 'confirm_delete') {
   const filePath = action.value.file_path;
   
-  // 执行删除
-  await exec({ command: `rm "${filePath}"` });
+  // ⚠️ 安全警告：永远不要直接将用户输入传递给 shell 命令！
+  // ❌ 错误示例：await exec({ command: `rm "${filePath}"` });
+  // 攻击者可以注入："; rm -rf / #" 来执行任意命令
   
-  // 更新卡片
-  await updateCard(messageId, {
-    header: { title: "✅ 删除成功", template: "green" },
-    elements: [
-      { tag: "div", text: { content: `文件 ${filePath} 已删除`, tag: "lark_md" } }
-    ]
-  });
+  // ✅ 正确做法：使用 Node.js fs API
+  const fs = require('fs').promises;
+  const path = require('path');
+  
+  try {
+    // 1. 验证路径（防止目录遍历攻击）
+    const safePath = path.resolve(filePath);
+    const workspaceRoot = process.cwd();
+    
+    if (!safePath.startsWith(workspaceRoot)) {
+      throw new Error('路径超出工作区范围');
+    }
+    
+    // 2. 检查文件是否存在
+    await fs.access(safePath);
+    
+    // 3. 使用 fs API 删除（安全）
+    await fs.unlink(safePath);
+    
+    // 4. 更新卡片
+    await updateCard(messageId, {
+      header: { title: "✅ 删除成功", template: "green" },
+      elements: [
+        { tag: "div", text: { content: `文件 ${path.basename(safePath)} 已删除`, tag: "lark_md" } }
+      ]
+    });
+  } catch (error) {
+    // 5. 错误处理
+    await updateCard(messageId, {
+      header: { title: "❌ 删除失败", template: "red" },
+      elements: [
+        { tag: "div", text: { content: `错误：${error.message}`, tag: "lark_md" } }
+      ]
+    });
+  }
 }
 ```
 
